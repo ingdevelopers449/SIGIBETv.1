@@ -103,6 +103,8 @@ CREATE TABLE IF NOT EXISTS configuracion (
   telefono VARCHAR(30) DEFAULT '+57 300 123 4567',
   email VARCHAR(100) DEFAULT 'contacto@sigibet.com',
   direccion VARCHAR(150) DEFAULT 'Calle 10 # 43E-15, Medellín',
+  impuesto DECIMAL(5,2) DEFAULT 0,
+  tipo_facturacion VARCHAR(50) DEFAULT 'Régimen Simplificado',
   tema_colores TEXT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 

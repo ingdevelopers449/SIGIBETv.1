@@ -18,6 +18,9 @@
         if ($currentPage === 'reportes.php') $c = 'reporte';
         if ($currentPage === 'clientes.php') $c = 'cliente';
         if ($currentPage === 'usuarios.php') $c = 'usuario';
+        if ($currentPage === 'auditoria.php') $c = 'auditoria';
+        if ($currentPage === 'respaldo.php') $c = 'respaldo';
+        if ($currentPage === 'configuracion.php') $c = 'configuracion';
         if ($currentPage === 'index.php' && empty($c)) $c = 'dashboard';
     ?>
     <ul class="nav flex-column sidebar-nav mt-3 overflow-auto pb-5">
@@ -49,25 +52,27 @@
                 <i class="fa-solid fa-file-invoice-dollar"></i> Punto de Venta
             </a>
         </li>
+        <li class="nav-item px-3 mt-4 mb-2 text-white-50 small fw-bold text-uppercase" style="letter-spacing: 1px;">Sistema</li>
+        
+        <?php if (AuthController::esAdmin()): ?>
         <li class="nav-item">
-            <a href="index.php?c=historial&a=index" class="nav-link <?php echo ($c == 'historial' || $c == 'auditoria') ? 'active' : ''; ?>">
-                <i class="fa-solid fa-clipboard-list"></i> Auditoría
+            <a href="auditoria.php" class="nav-link <?php echo ($c == 'auditoria') ? 'active' : ''; ?>">
+                <i class="fa-solid fa-list-check"></i> Auditoría
             </a>
         </li>
         <li class="nav-item">
-            <a href="index.php?c=configuracion&a=index" class="nav-link <?php echo ($c == 'configuracion') ? 'active' : ''; ?>">
-                <i class="fa-solid fa-laptop-code"></i> Configuración del software
-            </a>
-        </li>
-        <li class="nav-item">
-            <a href="index.php?c=backup&a=index" class="nav-link <?php echo ($c == 'backup') ? 'active' : ''; ?>">
+            <a href="respaldo.php" class="nav-link <?php echo ($c == 'respaldo') ? 'active' : ''; ?>">
                 <i class="fa-solid fa-database"></i> Respaldo
             </a>
         </li>
-        <?php if (AuthController::esAdmin()): ?>
         <li class="nav-item">
             <a href="usuarios.php" class="nav-link <?php echo ($c == 'usuario') ? 'active' : ''; ?>">
-                <i class="fa-solid fa-users-cog"></i> Configuración (Usuarios)
+                <i class="fa-solid fa-users-cog"></i> Gestión de Usuarios
+            </a>
+        </li>
+        <li class="nav-item">
+            <a href="configuracion.php" class="nav-link <?php echo ($c == 'configuracion') ? 'active' : ''; ?>">
+                <i class="fa-solid fa-laptop-code"></i> Configuración del Sistema
             </a>
         </li>
         <?php endif; ?>

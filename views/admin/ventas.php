@@ -1,4 +1,17 @@
 <?php
+require_once __DIR__ . '/../../controllers/VentaController.php';
+$vc = new VentaController();
+
+// Obtener impuesto de configuración
+require_once __DIR__ . '/../../config/database.php';
+global $conn;
+$resConf = $conn->query("SELECT impuesto FROM configuracion WHERE id = 1");
+$impuestoConf = 0;
+if ($resConf && $resConf->num_rows > 0) {
+    $rowConf = $resConf->fetch_assoc();
+    $impuestoConf = (float)$rowConf['impuesto'];
+}
+
 // Incluir el header (que automáticamente incluye el topbar y el sidebar)
 require_once __DIR__ . '/../layouts/header.php';
 ?>
@@ -61,18 +74,26 @@ require_once __DIR__ . '/../layouts/header.php';
                         </table>
                     </div>
                     
-                    <!-- Totales y Botones -->
-                    <div class="p-3 bg-light border-top mt-auto">
-                        <div class="d-flex justify-content-between mb-2">
-                            <span class="text-muted fw-bold">Subtotal:</span>
-                            <span class="fw-bold text-dark" id="txt-subtotal">$0.00</span>
-                        </div>
-                        <div class="d-flex justify-content-between mb-3 align-items-center">
-                            <span class="h5 mb-0 text-muted fw-bold">TOTAL:</span>
-                            <span class="h4 mb-0 fw-bold" style="color: var(--bs-primary);" id="txt-total">$0.00</span>
+                    <!-- Desglose de Totales -->
+                    <div class="mt-auto">
+                        <div class="bg-light p-3 rounded mb-3">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <span class="text-muted fw-bold small">SUBTOTAL</span>
+                                <span class="h6 mb-0 fw-bold text-dark" id="txt-subtotal">$0</span>
+                            </div>
+                            <?php if ($impuestoConf > 0): ?>
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <span class="text-muted fw-bold small">IVA (<?php echo $impuestoConf; ?>%)</span>
+                                <span class="h6 mb-0 fw-bold text-dark" id="txt-iva">$0</span>
+                            </div>
+                            <?php endif; ?>
+                            <div class="d-flex justify-content-between align-items-center mt-3 pt-2 border-top border-dark border-opacity-10">
+                                <span class="text-dark fw-bold">TOTAL A PAGAR</span>
+                                <span class="h3 mb-0 fw-bold text-success" id="txt-total">$0</span>
+                            </div>
                         </div>
                         
-                        <div class="mb-3">
+                        <div class="mb-3 px-3">
                             <label class="form-label small text-muted fw-bold">Método de Pago</label>
                             <select id="metodo-pago" class="form-select mb-3">
                                 <option value="Efectivo">Efectivo</option>
@@ -90,7 +111,7 @@ require_once __DIR__ . '/../layouts/header.php';
                             </div>
                         </div>
                         
-                        <div class="d-grid gap-2">
+                        <div class="d-grid gap-2 p-3">
                             <button class="btn btn-primary btn-lg fw-bold" id="btn-confirmar" disabled>
                                 <i class="fa-solid fa-check-circle me-2"></i>Confirmar Venta
                             </button>
@@ -107,6 +128,9 @@ require_once __DIR__ . '/../layouts/header.php';
 
 <!-- Lógica del Punto de Venta -->
 <script>
+    let carrito = [];
+    const tasaImpuesto = <?php echo json_encode($impuestoConf); ?>;
+
     document.addEventListener("DOMContentLoaded", function() {
         const inputBuscador = document.getElementById('buscador-productos');
         const contenedorResultados = document.getElementById('resultados-productos');
@@ -123,7 +147,6 @@ require_once __DIR__ . '/../layouts/header.php';
         const selectMetodo = document.getElementById('metodo-pago');
         const selectCliente = document.getElementById('cliente-id');
 
-        let carrito = [];
         let timerBusqueda = null;
 
         // --- CARGAR CLIENTES ---
@@ -147,7 +170,6 @@ require_once __DIR__ . '/../layouts/header.php';
             }, 300); // Debounce
         });
 
-        // Cargar todos inicialmente al hacer foco o presionar enter vacio
         inputBuscador.addEventListener('focus', function() {
             if(this.value.trim() === '') buscarProductos('');
         });
@@ -174,7 +196,6 @@ require_once __DIR__ . '/../layouts/header.php';
         }
 
         function renderizarResultados(productos) {
-            // Limpiar
             const items = contenedorResultados.querySelectorAll('.producto-item');
             items.forEach(i => i.remove());
 
@@ -188,8 +209,6 @@ require_once __DIR__ . '/../layouts/header.php';
                 const item = document.createElement('a');
                 item.href = "#";
                 item.className = "list-group-item list-group-item-action d-flex justify-content-between align-items-center p-3 producto-item";
-                
-                // Formatear precio
                 const precioFormat = new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(p.precio);
 
                 item.innerHTML = `
@@ -302,13 +321,20 @@ require_once __DIR__ . '/../layouts/header.php';
                 });
             }
 
-            // Exponer funciones al window temporalmente para los onchange/onclick
             window.posEliminar = eliminarDelCarrito;
             window.posCambiarCantidad = cambiarCantidad;
 
-            // Actualizar Totales
-            const totalFmt = new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(subtotal);
-            txtSubtotal.innerText = totalFmt;
+            const iva = subtotal * (tasaImpuesto / 100);
+            const total = subtotal + iva;
+
+            const subFmt = new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(subtotal);
+            const ivaFmt = new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(iva);
+            const totalFmt = new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(total);
+            
+            txtSubtotal.innerText = subFmt;
+            if (document.getElementById('txt-iva')) {
+                document.getElementById('txt-iva').innerText = ivaFmt;
+            }
             txtTotal.innerText = totalFmt;
             cartCount.innerText = totalItems + (totalItems === 1 ? ' ítem' : ' ítems');
         }
@@ -341,15 +367,21 @@ require_once __DIR__ . '/../layouts/header.php';
         btnConfirmar.addEventListener('click', () => {
             if (carrito.length === 0) return;
 
-            // Estado de carga
             const btnOriginalText = btnConfirmar.innerHTML;
             btnConfirmar.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Procesando...';
             btnConfirmar.disabled = true;
 
+            const currentSubtotal = carrito.reduce((acc, curr) => acc + (curr.precio * curr.cantidad), 0);
+            const currentIva = currentSubtotal * (tasaImpuesto / 100);
+            const currentTotal = currentSubtotal + currentIva;
+
             const payload = {
                 carrito: carrito.map(i => ({ id: i.id, cantidad: i.cantidad, precio: i.precio })),
                 metodo_pago: selectMetodo.value,
-                cliente_id: selectCliente.value ? parseInt(selectCliente.value) : null
+                cliente_id: selectCliente.value ? parseInt(selectCliente.value) : null,
+                subtotal: currentSubtotal,
+                iva: currentIva,
+                total: currentTotal
             };
 
             fetch('../../controllers/VentaController.php?action=procesarAjax', {
@@ -369,7 +401,6 @@ require_once __DIR__ . '/../layouts/header.php';
                         }).then(() => {
                             carrito = [];
                             renderizarCarrito();
-                            // Recargar productos para actualizar stock visualmente
                             buscarProductos(inputBuscador.value);
                         });
                     } else {

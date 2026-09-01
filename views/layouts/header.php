@@ -52,9 +52,34 @@ $breadcrumbs = $breadcrumb_map[$current_page_key] ?? [['icono'=>'fa-circle', 'la
     <!-- Bootstrap 5.3 CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- FontAwesome 6.5.0 -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
-    <!-- Custom CSS -->
-    <link rel="stylesheet" href="../../public/style.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="../../public/style.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <style>
+        <?php
+            // Intentar obtener el color primario de la configuración
+            $colorPrincipal = $_SESSION['tema_colores'] ?? '#3DA9E0';
+            if (!isset($_SESSION['tema_colores'])) {
+                require_once __DIR__ . '/../../config/database.php';
+                global $conn;
+                if ($conn) {
+                    $res = $conn->query("SELECT tema_colores FROM configuracion WHERE id = 1");
+                    if ($res && $res->num_rows > 0) {
+                        $row = $res->fetch_assoc();
+                        $colorPrincipal = $row['tema_colores'] ?: '#3DA9E0';
+                        $_SESSION['tema_colores'] = $colorPrincipal;
+                    }
+                }
+            }
+        ?>
+        :root {
+            --bs-primary: <?php echo htmlspecialchars($colorPrincipal); ?> !important;
+            --bs-primary-rgb: <?php 
+                list($r, $g, $b) = sscanf($colorPrincipal, "#%02x%02x%02x"); 
+                echo "$r, $g, $b"; 
+            ?> !important;
+        }
+    </style>
     <!-- Color Theme CSS -->
     <style>
         :root {

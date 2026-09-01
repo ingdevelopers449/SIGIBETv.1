@@ -5,6 +5,8 @@ if (session_status() === PHP_SESSION_NONE) {
 
 require_once __DIR__ . '/../models/Venta.php';
 require_once __DIR__ . '/../models/Producto.php';
+require_once __DIR__ . '/../models/Cliente.php';
+require_once __DIR__ . '/../models/Configuracion.php';
 
 /**
  * CONTROLADOR DE VENTAS (POS)
@@ -96,7 +98,14 @@ class VentaController
             $subtotal += ((int)$item['cantidad'] * (float)$item['precio']);
         }
 
-        $total = $subtotal;
+        // Calcular impuesto real desde BD para evitar manipulación
+        $modeloConfig = new Configuracion();
+        $config = $modeloConfig->obtenerConfiguracion();
+        $impuestoConf = (float)($config['impuesto'] ?? 0);
+        
+        $iva = $subtotal * ($impuestoConf / 100);
+        $total = $subtotal + $iva;
+        
         $metodoPago = $input['metodo_pago'] ?? 'Efectivo';
         $clienteId = !empty($input['cliente_id']) ? (int)$input['cliente_id'] : null;
         $usuarioId = (int)$_SESSION['usuario_id'];
